@@ -1,0 +1,97 @@
+#include<avr/io.h>
+#include<util/delay.h>
+void  lcd_init()
+{
+lcd_cmd(0X02);
+lcd_cmd(0X28);
+lcd_cmd(0X0C);
+lcd_cmd(0X06);
+lcd_cmd(0X01);
+}
+void lcd_cmd(int cmd)
+{
+PORTB = cmd&0XF0;
+ PORTB = PORTB + 0X04;
+_delay_ms(2);
+PORTB = PORTB - 0X04;
+PORTB = (cmd << 4)&0XF0;
+PORTB = PORTB + 0X04;
+_delay_ms(2);
+PORTB = PORTB - 0X04;
+}
+void lcd_data(int data)
+{
+PORTB = data&0XF0;
+ PORTB = PORTB + 0X05;
+_delay_ms(2);
+PORTB = PORTB - 0X04;
+PORTB = (data << 4)&0XF0;
+PORTB = PORTB + 0X05;
+_delay_ms(2);
+PORTB = PORTB - 0X04;
+}
+void lcd_string(char *str)
+{
+int i = 0;
+while(str[i] != '\0')
+{
+lcd_data(str[i]);
+_delay_ms(10);
+}
+}
+
+void lcd_num(int num)
+{
+int a = 0;
+if(num == 0)
+{
+lcd_cmd(48);
+}
+lcd_cmd(0X04);
+while(num != 0)
+{
+a = num%10;
+lcd_data(48 + a);
+num =num/10;
+}
+lcd_cmd(0X06);
+_delay_ms(1000);
+}
+int adc_read(int chnl)
+{
+ADMUX = 0X40 + chnl;
+ADCSRA = 0XD7; 
+while((ADCSRA & 0X10) == 0);
+return ADC;
+}
+int main()
+{
+DDRB = 0XFF;
+DDRC=0xff;
+lcd_init();
+_delay_ms(10);
+while(1)
+{
+int a = adc_read(0);
+a = a/3;
+lcd_cmd(0X01);
+lcd_cmd(0X87);
+lcd_num(a);
+if (a>600)
+{
+PORTC=0x00;
+lcd_cmd(0xc0);
+lcd_data('Day');
+_delay_ms(100);
+}
+else if(a<600)
+{
+PORTC=0xff;
+
+lcd_cmd(0xc0);
+lcd_data('Night');
+_delay_ms(100);
+}
+}
+}
+
